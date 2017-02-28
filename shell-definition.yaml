@@ -14,7 +14,7 @@ imports:
 
 node_types:
 
-  vendor.Cisco ASA Firewall 2 Gen:
+  vendor.Cisco ASA Firewall 2G:
     derived_from: cloudshell.nodes.Firewall
     #properties:
     #  property_name:

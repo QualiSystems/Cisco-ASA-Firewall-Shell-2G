@@ -21,7 +21,7 @@ from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterf
 
 class CiscoASAShellDriver(ResourceDriverInterface, FirewallResourceDriverInterface, GlobalLock):
     SUPPORTED_OS = [r"A(daptive)? ?S(ecurity)? ?A(ppliance)?"]
-    SHELL_NAME = "Cisco ASA Firewall 2 Gen"
+    SHELL_NAME = "Cisco ASA Firewall 2G"
 
     # SHELL_NAME = ""
 
