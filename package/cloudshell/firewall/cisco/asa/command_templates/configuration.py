@@ -4,13 +4,12 @@
 from collections import OrderedDict
 from cloudshell.cli.command_template.command_template import CommandTemplate
 
-COPY = CommandTemplate('copy {src} {dst} [vrf {vrf}]',
+COPY = CommandTemplate('copy [/noconfirm {noconfirm}] {src} {dst}',
                        action_map=OrderedDict({
                            r'\[confirm\]': lambda session, logger: session.send_line('', logger),
                            r'\(y/n\)': lambda session, logger: session.send_line('y', logger),
                            r'[Oo]verwrit+e': lambda session, logger: session.send_line('y', logger),
-                           r'\([Yy]es/[Nn]o\)': lambda session, logger: session.send_line('yes', logger),
-                           r'\s+[Vv][Rr][Ff]\s+': lambda session, logger: session.send_line('', logger)}))
+                           r'\([Yy]es/[Nn]o\)': lambda session, logger: session.send_line('yes', logger)}))
 
 DEL = CommandTemplate('del {target}', action_map=OrderedDict(
     {'[confirm]': lambda session, logger: session.send_line('', logger),
@@ -46,7 +45,8 @@ WRITE_ERASE = CommandTemplate('write erase',
                               }))
 
 RELOAD = CommandTemplate("reload", action_map=OrderedDict(
-    {'[\[\(][Yy]es/[Nn]o[\)\]]|\[confirm\]': lambda session, logger: session.send_line('yes', logger),
+    {'[\[\(][Yy]es/[Nn]o[\)\]]': lambda session, logger: session.send_line('yes', logger),
+     '\[confirm\]': lambda session, logger: session.send_line('', logger),
      '\(y\/n\)|continue': lambda session, logger: session.send_line('y', logger),
      'reload': lambda session, logger: session.send_line('', logger),
      '[\[\(][Yy]/[Nn][\)\]]': lambda session, logger: session.send_line('y', logger)

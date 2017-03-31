@@ -9,9 +9,9 @@ from cloudshell.firewall.cisco.asa.command_actions.iface_actions import IFaceAct
 from cloudshell.firewall.cisco.asa.command_actions.system_actions import SystemActions, FirmwareActions
 
 
-class CiscoLoadFirmwareFlow(LoadFirmwareFlow):
+class CiscoASALoadFirmwareFlow(LoadFirmwareFlow):
     def __init__(self, cli_handler, logger):
-        super(CiscoLoadFirmwareFlow, self).__init__(cli_handler, logger)
+        super(CiscoASALoadFirmwareFlow, self).__init__(cli_handler, logger)
 
     def execute_flow(self, path, vrf, timeout):
         """Load a firmware onto the device
@@ -30,7 +30,7 @@ class CiscoLoadFirmwareFlow(LoadFirmwareFlow):
         with self._cli_handler.get_cli_service(self._cli_handler.enable_mode) as enable_session:
             system_action = SystemActions(enable_session, self._logger)
             iface_action = IFaceActions(enable_session, self._logger)
-            system_action.copy(path, "flash:/", vrf=vrf)
+            system_action.copy(path, "flash:/")
 
             current_boot_settings = system_action.get_current_boot_config()
             current_boot_settings = re.sub("boot-start-marker|boot-end-marker", "", current_boot_settings)
@@ -45,7 +45,7 @@ class CiscoLoadFirmwareFlow(LoadFirmwareFlow):
                 raise Exception(self.__class__.__name__,
                                 "Can't add firmware '{}' for boot!".format(firmware_file_name))
 
-            system_action.copy("running-config", "startup-config", vrf=vrf)
+            system_action.copy("running-config", "startup-config")
             system_action.reload_device(timeout)
 
             os_version = system_action.get_current_os_version()

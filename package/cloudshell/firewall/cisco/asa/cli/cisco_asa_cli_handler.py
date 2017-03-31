@@ -8,14 +8,15 @@ from cloudshell.cli.command_mode_helper import CommandModeHelper
 from cloudshell.cli.session.ssh_session import SSHSession
 from cloudshell.cli.session.telnet_session import TelnetSession
 from cloudshell.devices.cli_handler_impl import CliHandlerImpl
-from cloudshell.networking.cisco.cli.cisco_command_modes import EnableCommandMode, DefaultCommandMode, ConfigCommandMode
-from cloudshell.networking.cisco.sessions.console_ssh_session import ConsoleSSHSession
-from cloudshell.networking.cisco.sessions.console_telnet_session import ConsoleTelnetSession
+from cloudshell.firewall.cisco.asa.cli.cisco_asa_command_modes import EnableCommandMode, DefaultCommandMode,\
+    ConfigCommandMode
+from cloudshell.firewall.cisco.asa.sessions.console_ssh_session import ConsoleSSHSession
+from cloudshell.firewall.cisco.asa.sessions.console_telnet_session import ConsoleTelnetSession
 
 
-class CiscoCliHandler(CliHandlerImpl):
+class CiscoASACliHandler(CliHandlerImpl):
     def __init__(self, cli, resource_config, logger, api):
-        super(CiscoCliHandler, self).__init__(cli, resource_config, logger, api)
+        super(CiscoASACliHandler, self).__init__(cli, resource_config, logger, api)
         self.modes = CommandModeHelper.create_command_mode(resource_config, api)
 
     @property
@@ -76,8 +77,8 @@ class CiscoCliHandler(CliHandlerImpl):
 
         self._enter_enable_mode(session=session, logger=logger)
         session.hardware_expect("terminal pager 0", EnableCommandMode.PROMPT, logger)
-        session.hardware_expect("terminal width 300", EnableCommandMode.PROMPT, logger)
         self._enter_config_mode(session, logger)
+        session.hardware_expect("terminal width 300", ConfigCommandMode.PROMPT, logger)
         session.hardware_expect("no logging console", ConfigCommandMode.PROMPT, logger)
         session.hardware_expect("exit", EnableCommandMode.PROMPT, logger)
 
@@ -105,9 +106,13 @@ class CiscoCliHandler(CliHandlerImpl):
         :param logger:
         :raise Exception:
         """
-        result = session.hardware_expect('', '{0}|{1}'.format(DefaultCommandMode.PROMPT, EnableCommandMode.PROMPT),
+
+        result = session.hardware_expect("", "{default}|{enable}|{config}".format(default=DefaultCommandMode.PROMPT,
+                                                                                  enable=EnableCommandMode.PROMPT,
+                                                                                  config=ConfigCommandMode.PROMPT),
                                          logger)
-        if not re.search(EnableCommandMode.PROMPT, result):
+
+        if re.search(DefaultCommandMode.PROMPT, result):
             enable_password = self._api.DecryptPassword(self.resource_config.enable_password).Value
             expect_map = {'[Pp]assword': lambda session, logger: session.send_line(enable_password, logger)}
             session.hardware_expect('enable', EnableCommandMode.PROMPT, action_map=expect_map, logger=logger)
@@ -115,3 +120,7 @@ class CiscoCliHandler(CliHandlerImpl):
                                              logger)
             if not re.search(EnableCommandMode.PROMPT, result):
                 raise Exception('enter_enable_mode', 'Enable password is incorrect')
+        elif re.search(ConfigCommandMode.PROMPT, result):
+            session.hardware_expect("end", EnableCommandMode.PROMPT, logger=logger)
+        else:
+            logger.debug("Session already in Enable Mode")

@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from cloudshell.devices.runners.firmware_runner import FirmwareRunner
-from cloudshell.firewall.cisco.asa.cli.cisco_cli_handler import CiscoCliHandler
-from cloudshell.firewall.cisco.asa.flows.cisco_load_firmware_flow import CiscoLoadFirmwareFlow
+from cloudshell.firewall.cisco.asa.cli.cisco_asa_cli_handler import CiscoASACliHandler
+from cloudshell.firewall.cisco.asa.flows.cisco_asa_load_firmware_flow import CiscoASALoadFirmwareFlow
 
 
-class CiscoFirmwareRunner(FirmwareRunner):
+class CiscoASAFirmwareRunner(FirmwareRunner):
     RELOAD_TIMEOUT = 500
 
     def __init__(self, cli, logger, resource_config, api):
@@ -18,15 +18,15 @@ class CiscoFirmwareRunner(FirmwareRunner):
         :param GenericNetworkingResource resource_config:
         """
 
-        super(CiscoFirmwareRunner, self).__init__(logger)
+        super(CiscoASAFirmwareRunner, self).__init__(logger)
         self.cli = cli
         self.api = api
         self.resource_config = resource_config
 
     @property
     def cli_handler(self):
-        return CiscoCliHandler(self.cli, self.resource_config, self._logger, self.api)
+        return CiscoASACliHandler(self.cli, self.resource_config, self._logger, self.api)
 
     @property
     def load_firmware_flow(self):
-        return CiscoLoadFirmwareFlow(self.cli_handler, self._logger)
+        return CiscoASALoadFirmwareFlow(self.cli_handler, self._logger)

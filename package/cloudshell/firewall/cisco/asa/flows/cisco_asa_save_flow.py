@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 from cloudshell.devices.flows.action_flows import SaveConfigurationFlow
-from cloudshell.firewall.cisco.asa.command_actions.system_actions import SystemActions
+from cloudshell.firewall.cisco.asa.command_actions.system_actions import SystemActions, InvalidIputException
 
 
-class CiscoSaveFlow(SaveConfigurationFlow):
+class CiscoASASaveFlow(SaveConfigurationFlow):
     def __init__(self, cli_handler, logger):
-        super(CiscoSaveFlow, self).__init__(cli_handler, logger)
+        super(CiscoASASaveFlow, self).__init__(cli_handler, logger)
 
     def execute_flow(self, folder_path, configuration_type, vrf_management_name=None):
         """ Execute flow which save selected file to the provided destination
@@ -18,10 +18,13 @@ class CiscoSaveFlow(SaveConfigurationFlow):
         :return: saved configuration file name
         """
 
+        configuration_type = "{}-config".format(configuration_type)
+
         with self._cli_handler.get_cli_service(self._cli_handler.enable_mode) as enable_session:
             save_action = SystemActions(enable_session, self._logger)
-            action_map = save_action.prepare_action_map(configuration_type, folder_path)
-            save_action.copy(configuration_type,
-                             folder_path,
-                             vrf=vrf_management_name,
-                             action_map=action_map)
+            action_map = save_action.prepare_action_map(source_file=configuration_type,
+                                                        destination_file=folder_path)
+            try:
+                save_action.copy(configuration_type, folder_path, action_map=action_map)
+            except InvalidIputException:
+                save_action.copy(configuration_type, folder_path, action_map=action_map, noconfirm=False)

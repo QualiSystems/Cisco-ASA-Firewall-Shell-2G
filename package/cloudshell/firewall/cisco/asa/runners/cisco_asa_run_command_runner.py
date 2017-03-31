@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from cloudshell.devices.runners.run_command_runner import RunCommandRunner
-from cloudshell.firewall.cisco.asa.cli.cisco_cli_handler import CiscoCliHandler
+from cloudshell.firewall.cisco.asa.cli.cisco_asa_cli_handler import CiscoASACliHandler
 
 
-class CiscoRunCommandRunner(RunCommandRunner):
+class CiscoASARunCommandRunner(RunCommandRunner):
     def __init__(self, cli, resource_config, logger, api):
         """Create CiscoRunCommandOperations
 
@@ -16,11 +16,11 @@ class CiscoRunCommandRunner(RunCommandRunner):
         :return:
         """
 
-        super(CiscoRunCommandRunner, self).__init__(logger)
+        super(CiscoASARunCommandRunner, self).__init__(logger)
         self.cli = cli
         self.api = api
         self.resource_config = resource_config
 
     @property
     def cli_handler(self):
-        return CiscoCliHandler(self.cli, self.resource_config, self._logger, self.api)
+        return CiscoASACliHandler(self.cli, self.resource_config, self._logger, self.api)

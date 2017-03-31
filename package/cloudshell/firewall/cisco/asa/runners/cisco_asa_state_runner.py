@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from cloudshell.devices.runners.state_runner import StateRunner
-from cloudshell.firewall.cisco.asa.cli.cisco_cli_handler import CiscoCliHandler
+from cloudshell.firewall.cisco.asa.cli.cisco_asa_cli_handler import CiscoASACliHandler
 
 
-class CiscoStateRunner(StateRunner):
+class CiscoASAStateRunner(StateRunner):
     def __init__(self, cli, logger, api, resource_config):
         """
 
@@ -15,10 +15,10 @@ class CiscoStateRunner(StateRunner):
         :param resource_config:
         """
 
-        super(CiscoStateRunner, self).__init__(logger, api, resource_config)
+        super(CiscoASAStateRunner, self).__init__(logger, api, resource_config)
         self.cli = cli
         self.api = api
 
     @property
     def cli_handler(self):
-        return CiscoCliHandler(self.cli, self.resource_config, self._logger, self.api)
+        return CiscoASACliHandler(self.cli, self.resource_config, self._logger, self.api)

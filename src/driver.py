@@ -5,14 +5,12 @@
 from cloudshell.devices.driver_helper import get_logger_with_thread_id, get_api, get_cli
 from cloudshell.devices.standards.firewall.configuration_attributes_structure import \
     create_firewall_resource_from_context
-from cloudshell.firewall.cisco.asa.runners.cisco_asa_connectiviry_runner import \
-    CiscoASAConnectivityRunner as ConnectivityRunner
 from cloudshell.firewall.cisco.asa.runners.cisco_asa_configuration_runner import \
     CiscoASAConfigurationRunner as ConfigurationRunner
 from cloudshell.firewall.cisco.asa.runners.cisco_asa_autoload_runner import CiscoASAAutoloadRunner as AutoloadRunner
 from cloudshell.firewall.cisco.asa.runners.cisco_asa_firmware_runner import CiscoASAFirmwareRunner as FirmwareRunner
 from cloudshell.firewall.cisco.asa.runners.cisco_asa_run_command_runner import CiscoASARunCommandRunner as CommandRunner
-from cloudshell.firewall.cisco.asa.runners.cisco_asa_state_runner import JuniperStateRunner as StateRunner
+from cloudshell.firewall.cisco.asa.runners.cisco_asa_state_runner import CiscoASAStateRunner as StateRunner
 from cloudshell.firewall.firewall_resource_driver_interface import FirewallResourceDriverInterface
 from cloudshell.shell.core.context import ResourceCommandContext
 from cloudshell.shell.core.driver_utils import GlobalLock
@@ -22,8 +20,6 @@ from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterf
 class CiscoASAShellDriver(ResourceDriverInterface, FirewallResourceDriverInterface, GlobalLock):
     SUPPORTED_OS = [r"A(daptive)? ?S(ecurity)? ?A(ppliance)?"]
     SHELL_NAME = "Cisco ASA Firewall 2G"
-
-    # SHELL_NAME = ""
 
     def __init__(self):
         super(CiscoASAShellDriver, self).__init__()
@@ -106,37 +102,12 @@ class CiscoASAShellDriver(ResourceDriverInterface, FirewallResourceDriverInterfa
         result_str = send_command_operations.run_custom_config_command(custom_command=custom_command)
         return result_str
 
-    def ApplyConnectivityChanges(self, context, request):
-        """
-        Create vlan and add or remove it to/from network interface
-
-        :param ResourceCommandContext context: ResourceCommandContext object with all Resource Attributes inside
-        :param str request: request json
-        :return:
-        """
-
-        logger = get_logger_with_thread_id(context)
-        api = get_api(context)
-
-        resource_config = create_firewall_resource_from_context(shell_name=self.SHELL_NAME,
-                                                                supported_os=self.SUPPORTED_OS,
-                                                                context=context)
-
-        connectivity_operations = ConnectivityRunner(cli=self._cli, resource_config=resource_config, api=api,
-                                                     logger=logger)
-        logger.info('Start applying connectivity changes, request is: {0}'.format(str(request)))
-        result = connectivity_operations.apply_connectivity_changes(request=request)
-        logger.info('Finished applying connectivity changes, response is: {0}'.format(str(result)))
-        logger.info('Apply Connectivity changes completed')
-        return result
-
-    def save(self, context, folder_path, configuration_type, vrf_management_name):
+    def save(self, context, folder_path, configuration_type):
         """Save selected file to the provided destination
 
         :param ResourceCommandContext context: ResourceCommandContext object with all Resource Attributes inside
         :param configuration_type: source file, which will be saved
         :param folder_path: destination path where file will be saved
-        :param vrf_management_name: VRF management Name
         :return str saved configuration file name:
         """
 
@@ -150,21 +121,17 @@ class CiscoASAShellDriver(ResourceDriverInterface, FirewallResourceDriverInterfa
         if not configuration_type:
             configuration_type = 'running'
 
-        if not vrf_management_name:
-            vrf_management_name = resource_config.vrf_management_name
-
         configuration_operations = ConfigurationRunner(cli=self._cli,
                                                        logger=logger,
                                                        resource_config=resource_config,
                                                        api=api)
         logger.info('Save started')
-        response = configuration_operations.save(folder_path=folder_path, configuration_type=configuration_type,
-                                                 vrf_management_name=vrf_management_name)
+        response = configuration_operations.save(folder_path=folder_path, configuration_type=configuration_type)
         logger.info('Save completed')
         return response
 
     @GlobalLock.lock
-    def restore(self, context, path, configuration_type, restore_method, vrf_management_name):
+    def restore(self, context, path, configuration_type, restore_method):
         """Restore selected file to the provided destination
 
         :param ResourceCommandContext context: ResourceCommandContext object with all Resource Attributes inside
@@ -187,17 +154,14 @@ class CiscoASAShellDriver(ResourceDriverInterface, FirewallResourceDriverInterfa
         if not restore_method:
             restore_method = 'override'
 
-        if not vrf_management_name:
-            vrf_management_name = resource_config.vrf_management_name
-
         configuration_operations = ConfigurationRunner(cli=self._cli,
                                                        logger=logger,
                                                        resource_config=resource_config,
                                                        api=api)
         logger.info('Restore started')
-        configuration_operations.restore(path=path, restore_method=restore_method,
-                                         configuration_type=configuration_type,
-                                         vrf_management_name=vrf_management_name)
+        configuration_operations.restore(path=path,
+                                         restore_method=restore_method,
+                                         configuration_type=configuration_type)
         logger.info('Restore completed')
 
     def orchestration_save(self, context, mode, custom_params):
@@ -255,7 +219,7 @@ class CiscoASAShellDriver(ResourceDriverInterface, FirewallResourceDriverInterfa
         logger.info('Orchestration restore completed')
 
     @GlobalLock.lock
-    def load_firmware(self, context, path, vrf_management_name):
+    def load_firmware(self, context, path):
         """Upload and updates firmware on the resource
 
         :param ResourceCommandContext context: ResourceCommandContext object with all Resource Attributes inside
@@ -270,12 +234,9 @@ class CiscoASAShellDriver(ResourceDriverInterface, FirewallResourceDriverInterfa
                                                                 supported_os=self.SUPPORTED_OS,
                                                                 context=context)
 
-        if not vrf_management_name:
-            vrf_management_name = resource_config.vrf_management_name
-
         logger.info('Start Load Firmware')
         firmware_operations = FirmwareRunner(cli=self._cli, logger=logger, resource_config=resource_config, api=api)
-        response = firmware_operations.load_firmware(path=path, vrf_management_name=vrf_management_name)
+        response = firmware_operations.load_firmware(path=path)
         logger.info('Finish Load Firmware: {}'.format(response))
 
     def health_check(self, context):
@@ -300,4 +261,18 @@ class CiscoASAShellDriver(ResourceDriverInterface, FirewallResourceDriverInterfa
         pass
 
     def shutdown(self, context):
-        pass
+        """ Shutdown device
+
+        :param ResourceCommandContext context: ResourceCommandContext object with all Resource Attributes inside
+        :return:
+        """
+
+        logger = get_logger_with_thread_id(context)
+        api = get_api(context)
+
+        resource_config = create_firewall_resource_from_context(shell_name=self.SHELL_NAME,
+                                                                supported_os=self.SUPPORTED_OS,
+                                                                context=context)
+
+        state_operations = StateRunner(cli=self._cli, logger=logger, api=api, resource_config=resource_config)
+        return state_operations.shutdown()

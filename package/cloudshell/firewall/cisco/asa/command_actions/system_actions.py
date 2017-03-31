@@ -8,6 +8,10 @@ from cloudshell.cli.command_template.command_template_executor import CommandTem
 from cloudshell.firewall.cisco.asa.command_templates import configuration, firmware
 
 
+class InvalidIputException(Exception):
+    pass
+
+
 class SystemActions(object):
     def __init__(self, cli_service, logger):
         """
@@ -29,11 +33,9 @@ class SystemActions(object):
             destination_file_data_list = re.sub("/+", "/", destination_file).split("/")
             host = destination_file_data_list[1]
             source_file_name = source_file.split(":")[-1].split("/")[-1]
-            action_map[r"[\[\(].*{}[\)\]]".format(
-                destination_file_data_list[-1])] = lambda session, logger: session.send_line("", logger)
+            action_map[r"[\[\(].*{}[\)\]]".format(destination_file_data_list[-1])] = lambda session, logger: session.send_line("", logger)
 
-            action_map[r"[\[\(]{}[\)\]]".format(source_file_name)] = lambda session, logger: session.send_line("",
-                                                                                                               logger)
+            action_map[r"[\[\(]{}[\)\]]".format(source_file_name)] = lambda session, logger: session.send_line("", logger)
         else:
             destination_file_name = destination_file.split(":")[-1].split("/")[-1]
             source_file_name = source_file.split(":")[-1].split("/")[-1]
@@ -47,91 +49,65 @@ class SystemActions(object):
                 if storage_data:
                     storage_data_dict = storage_data.groupdict()
                     host = storage_data_dict["host"]
+                    username = storage_data_dict["user"]
                     password = storage_data_dict["password"]
 
-                    action_map[r"[Pp]assword:".format(
-                        source_file)] = lambda session, logger: session.send_line(password, logger)
-
+                    action_map[r"[\[\(]{}[\)\]]".format(username)] = lambda session, logger: session.send_line("", logger)
+                    action_map[r"[\[\(]{}[\)\]]".format(password)] = lambda session, logger: session.send_line("", logger)
+                    action_map[r"[Pp]assword:".format(source_file)] = lambda session, logger: session.send_line(password, logger)
                 else:
                     host = host.split("@")[-1]
             action_map[r"(?!/){}(?!/)".format(host)] = lambda session, logger: session.send_line("", logger)
+
+        action_map[r"\?"] = lambda session: session.send_line("")
         return action_map
 
-    def copy(self, source, destination, vrf=None, action_map=None, error_map=None, timeout=None):
+    def copy(self, source, destination, action_map=None, error_map=None, timeout=None, noconfirm=True):
         """Copy file from device to tftp or vice versa, as well as copying inside devices filesystem.
 
         :param source: source file
         :param destination: destination file
-        :param vrf: vrf management name
         :param action_map: actions will be taken during executing commands, i.e. handles yes/no prompts
         :param error_map: errors will be raised during executing commands, i.e. handles Invalid Commands errors
         :param timeout: session timeout
         :raise Exception:
         """
 
-        if not vrf:
-            vrf = None
-
-        output = CommandTemplateExecutor(self._cli_service, configuration.COPY,
-                                         action_map=action_map,
-                                         error_map=error_map).execute_command(
-            src=source, dst=destination, vrf=vrf, timeout=timeout)
+        if noconfirm:
+            output = CommandTemplateExecutor(self._cli_service, configuration.COPY,
+                                             action_map=action_map,
+                                             error_map=error_map,
+                                             timeout=timeout).execute_command(src=source,
+                                                                                              dst=destination,
+                                                                                              noconfirm="")
+        else:
+            output = CommandTemplateExecutor(self._cli_service, configuration.COPY,
+                                             action_map=action_map,
+                                             error_map=error_map).execute_command(src=source,
+                                                                                              dst=destination)
 
         copy_ok_pattern = r"\d+ bytes copied|copied.*[\[\(].*[1-9][0-9]* bytes.*[\)\]]|[Cc]opy complete|[\(\[]OK[\]\)]"
-        status_match = re.search(copy_ok_pattern, output,
-                                 re.IGNORECASE)
+        status_match = re.search(copy_ok_pattern, output, re.IGNORECASE)
+
         if not status_match:
-            match_error = re.search("%.*|TFTP put operation failed.*|sysmgr.*not supported.*\n", output, re.IGNORECASE)
-            message = "Copy Command failed. "
-            if match_error:
-                self._logger.error(message)
-                message += re.sub("^%|\\n", "", match_error.group())
+            if noconfirm and "Invalid input detected" in output:
+                raise InvalidIputException
             else:
-                error_match = re.search(r"error.*\n|fail.*\n", output, re.IGNORECASE)
-                if error_match:
+                match_error = re.search(r"%.*|TFTP put operation failed.*|sysmgr.*not supported.*\n",
+                                        output,
+                                        re.IGNORECASE)
+                message = "Copy Command failed. "
+                if match_error:
                     self._logger.error(message)
-                    message += error_match.group()
-            raise Exception("Copy", message)
+                    message += re.sub(r"^%|\\n", "", match_error.group())
+                else:
+                    error_match = re.search(r"error.*\n|fail.*\n", output, re.IGNORECASE)
+                    if error_match:
+                        self._logger.error(message)
+                        message += error_match.group()
+                raise Exception("Copy", message)
 
-    def delete_file(self, path, action_map=None, error_map=None):
-        """Delete file on the device
-
-        :param path: path to file
-        :param action_map: actions will be taken during executing commands, i.e. handles yes/no prompts
-        :param error_map: errors will be raised during executing commands, i.e. handles Invalid Commands errors
-        """
-
-        CommandTemplateExecutor(self._cli_service, configuration.DEL, action_map=action_map,
-                                error_map=error_map).execute_command(target=path)
-
-    def override_running(self, path, action_map=None, error_map=None):
-        """Override running-config
-
-        :param path: relative path to the file on the remote host tftp://server/sourcefile
-        :param action_map: actions will be taken during executing commands, i.e. handles yes/no prompts
-        :param error_map: errors will be raised during executing commands, i.e. handles Invalid Commands errors
-        :raise Exception:
-        """
-
-        output = CommandTemplateExecutor(self._cli_service,
-                                         configuration.CONFIGURE_REPLACE, action_map=action_map,
-                                         error_map=error_map).execute_command(path=path)
-        match_error = re.search(r'[Ee]rror.*$', output)
-        if match_error:
-            error_str = match_error.group()
-            raise Exception('Override_Running', 'Configure replace completed with error: ' + error_str)
-
-    def write_erase(self, action_map=None, error_map=None):
-        """Erase startup configuration
-
-        :param action_map:
-        :param error_map:
-        """
-
-        CommandTemplateExecutor(self._cli_service, configuration.WRITE_ERASE, action_map=action_map,
-                                error_map=error_map).execute_command()
-
-    def reload_device(self, timeout, action_map=None, error_map=None):
+    def reload_device(self, timeout=500, action_map=None, error_map=None):
         """Reload device
 
         :param timeout: session reconnect timeout
