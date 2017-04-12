@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from cloudshell.devices.flows.action_flows import SaveConfigurationFlow
-from cloudshell.firewall.cisco.asa.command_actions.system_actions import SystemActions, InvalidIputException
+from cloudshell.firewall.cisco.asa.command_actions.system_actions import SystemActions
 
 
 class CiscoASASaveFlow(SaveConfigurationFlow):
@@ -24,7 +24,5 @@ class CiscoASASaveFlow(SaveConfigurationFlow):
             save_action = SystemActions(enable_session, self._logger)
             action_map = save_action.prepare_action_map(source_file=configuration_type,
                                                         destination_file=folder_path)
-            try:
-                save_action.copy(configuration_type, folder_path, action_map=action_map)
-            except InvalidIputException:
-                save_action.copy(configuration_type, folder_path, action_map=action_map, noconfirm=False)
+
+            save_action.copy(configuration_type, folder_path, action_map=action_map)

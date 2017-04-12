@@ -178,8 +178,9 @@ class CiscoASASNMPAutoload(object):
                 self.exclusion_list.append(index)
                 continue
             temp_entity_table = physical_indexes[index].copy()
-            temp_entity_table.update(self.snmp_handler.get_properties('ENTITY-MIB', index, entity_table_critical_port_attr)
-                                     [index])
+            temp_entity_table.update(self.snmp_handler.get_properties('ENTITY-MIB',
+                                                                      index,
+                                                                      entity_table_critical_port_attr)[index])
             if temp_entity_table['entPhysicalContainedIn'] == '':
                 is_excluded = True
                 self.exclusion_list.append(index)
@@ -192,8 +193,9 @@ class CiscoASASNMPAutoload(object):
             if is_excluded is True:
                 continue
 
-            temp_entity_table.update(self.snmp_handler.get_properties('ENTITY-MIB', index, entity_table_optional_port_attr)
-                                     [index])
+            temp_entity_table.update(self.snmp_handler.get_properties('ENTITY-MIB',
+                                                                      index,
+                                                                      entity_table_optional_port_attr)[index])
 
             if temp_entity_table['entPhysicalClass'] == '':
                 vendor_type = self.snmp_handler.get_property('ENTITY-MIB', 'entPhysicalVendorType', index)
@@ -702,7 +704,9 @@ class CiscoASASNMPAutoload(object):
 
         port_id = None
         try:
-            ent_alias_mapping_identifier = self.snmp_handler.get(('ENTITY-MIB', 'entAliasMappingIdentifier', port_index, 0))
+            ent_alias_mapping_identifier = self.snmp_handler.get(('ENTITY-MIB',
+                                                                  'entAliasMappingIdentifier',
+                                                                  port_index, 0))
             port_id = int(ent_alias_mapping_identifier['entAliasMappingIdentifier'].split('.')[-1])
         except Exception as e:
             self.logger.error(e.message)

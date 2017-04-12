@@ -18,6 +18,8 @@ class CiscoEnableSnmpFlow(EnableSnmpFlow):
         self._cli_handler = cli_handler
 
     def execute_flow(self, snmp_parameters):
+        """ Configure SNMP Read Community or raise Exception """
+
         if not isinstance(snmp_parameters, SNMPV2Parameters):
             message = 'Unsupported SNMP version'
             self._logger.error(message)

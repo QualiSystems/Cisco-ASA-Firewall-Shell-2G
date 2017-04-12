@@ -8,10 +8,6 @@ from cloudshell.cli.command_template.command_template_executor import CommandTem
 from cloudshell.firewall.cisco.asa.command_templates import configuration, firmware
 
 
-class InvalidIputException(Exception):
-    pass
-
-
 class SystemActions(object):
     def __init__(self, cli_service, logger):
         """
@@ -63,7 +59,7 @@ class SystemActions(object):
         return action_map
 
     def copy(self, source, destination, action_map=None, error_map=None, timeout=None, noconfirm=True):
-        """Copy file from device to tftp or vice versa, as well as copying inside devices filesystem.
+        """ Copy file from device to tftp or vice versa, as well as copying inside devices filesystem.
 
         :param source: source file
         :param destination: destination file
@@ -78,34 +74,38 @@ class SystemActions(object):
                                              action_map=action_map,
                                              error_map=error_map,
                                              timeout=timeout).execute_command(src=source,
-                                                                                              dst=destination,
-                                                                                              noconfirm="")
+                                                                              dst=destination,
+                                                                              noconfirm="")
+
+            if "Invalid input detected" in output:
+                output = CommandTemplateExecutor(self._cli_service, configuration.COPY,
+                                                 action_map=action_map,
+                                                 error_map=error_map).execute_command(src=source,
+                                                                                      dst=destination)
+
         else:
             output = CommandTemplateExecutor(self._cli_service, configuration.COPY,
                                              action_map=action_map,
                                              error_map=error_map).execute_command(src=source,
-                                                                                              dst=destination)
+                                                                                  dst=destination)
 
         copy_ok_pattern = r"\d+ bytes copied|copied.*[\[\(].*[1-9][0-9]* bytes.*[\)\]]|[Cc]opy complete|[\(\[]OK[\]\)]"
         status_match = re.search(copy_ok_pattern, output, re.IGNORECASE)
 
         if not status_match:
-            if noconfirm and "Invalid input detected" in output:
-                raise InvalidIputException
+            match_error = re.search(r"%.*|TFTP put operation failed.*|sysmgr.*not supported.*\n",
+                                    output,
+                                    re.IGNORECASE)
+            message = "Copy Command failed. "
+            if match_error:
+                self._logger.error(message)
+                message += re.sub(r"^%|\\n", "", match_error.group())
             else:
-                match_error = re.search(r"%.*|TFTP put operation failed.*|sysmgr.*not supported.*\n",
-                                        output,
-                                        re.IGNORECASE)
-                message = "Copy Command failed. "
-                if match_error:
+                error_match = re.search(r"error.*\n|fail.*\n", output, re.IGNORECASE)
+                if error_match:
                     self._logger.error(message)
-                    message += re.sub(r"^%|\\n", "", match_error.group())
-                else:
-                    error_match = re.search(r"error.*\n|fail.*\n", output, re.IGNORECASE)
-                    if error_match:
-                        self._logger.error(message)
-                        message += error_match.group()
-                raise Exception("Copy", message)
+                    message += error_match.group()
+            raise Exception("Copy", message)
 
     def reload_device(self, timeout=500, action_map=None, error_map=None):
         """Reload device

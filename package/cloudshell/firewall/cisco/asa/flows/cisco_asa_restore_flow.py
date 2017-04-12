@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from cloudshell.devices.flows.action_flows import RestoreConfigurationFlow
-from cloudshell.firewall.cisco.asa.command_actions.system_actions import SystemActions, InvalidIputException
+from cloudshell.firewall.cisco.asa.command_actions.system_actions import SystemActions
 from cloudshell.cli.session.session_exceptions import ExpectedSessionException
 
 
@@ -13,7 +13,7 @@ class CiscoASARestoreFlow(RestoreConfigurationFlow):
     def __init__(self, cli_handler, logger):
         super(CiscoASARestoreFlow, self).__init__(cli_handler, logger)
 
-    def execute_flow(self, path, configuration_type, restore_method, vrf_management_name):
+    def execute_flow(self, path, configuration_type, restore_method, vrf_management_name=None):
         """ Execute flow which save selected file to the provided destination
 
         :param path: the path to the configuration file, including the configuration file name
@@ -30,28 +30,19 @@ class CiscoASARestoreFlow(RestoreConfigurationFlow):
             copy_action_map = restore_action.prepare_action_map(path, configuration_type)
 
             if configuration_type == "startup-config":
-                try:
-                    restore_action.copy(path, configuration_type, action_map=copy_action_map)
-                except InvalidIputException:
-                    restore_action.copy(path, configuration_type, action_map=copy_action_map, noconfirm=False)
+                restore_action.copy(path, configuration_type, action_map=copy_action_map)
 
             elif configuration_type == "running-config" and restore_method == "override":
                 self._logger.debug("Start backup process for 'startup-config' config")
                 try:
-                    try:
-                        restore_action.copy("startup-config", self.BACKUP_STARTUP, action_map=copy_action_map)
-                    except InvalidIputException:
-                        restore_action.copy("startup-config", self.BACKUP_STARTUP, action_map=copy_action_map, noconfirm=False)
+                    restore_action.copy("startup-config", self.BACKUP_STARTUP, action_map=copy_action_map)
                 except:
                     raise Exception(self.__class__.__name__,
                                     "Failed to backup 'startup-config'. Check if flash has enough free space")
                 self._logger.debug("Backup completed successfully")
 
                 try:
-                    try:
-                        restore_action.copy(path, "startup-config", action_map=copy_action_map)
-                    except InvalidIputException:
-                        restore_action.copy(path, "startup-config", action_map=copy_action_map, noconfirm=False)
+                    restore_action.copy(path, "startup-config", action_map=copy_action_map)
                 except:
                     self._logger.debug("Failed to reload 'startup-config' from {}.".format(path))
                     self._logger.debug("Restore 'startup-config' from backup")
@@ -62,20 +53,10 @@ class CiscoASARestoreFlow(RestoreConfigurationFlow):
 
             elif configuration_type == "running-config" and restore_method == "append":
                 try:
-                    try:
-                        restore_action.copy(path, configuration_type, action_map=copy_action_map, timeout=5)
-                    except InvalidIputException:
-                        restore_action.copy(path, configuration_type,
-                                            action_map=copy_action_map,
-                                            timeout=5,
-                                            noconfirm=False)
+                    restore_action.copy(path, configuration_type, action_map=copy_action_map, timeout=5)
                 except ExpectedSessionException:
                     pass
                 if enable_session.session.session_type.lower() != "console":
                     enable_session.reconnect(timeout=self.SESSION_RECONNECT_TIMEOUT)
             else:
-                try:
-                    restore_action.copy(path, configuration_type, action_map=copy_action_map)
-                except InvalidIputException:
-                    restore_action.copy(path, configuration_type, action_map=copy_action_map, noconfirm=False)
-
+                restore_action.copy(path, configuration_type, action_map=copy_action_map)
