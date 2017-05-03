@@ -32,7 +32,7 @@ class TestCiscoASAEnableSNMPFlow(unittest.TestCase):
         self.tested_instance.execute_flow(snmp_parameters)
         snmp_actions.disable_snmp.assert_called_once_with(test_snmp_community)
 
-    @mock.patch("cloudshell.firewall.cisco.asa.flows.cisco_asa_enable_snmp_flow.EnableDisableSnmpActions")
+    @mock.patch("cloudshell.firewall.cisco.asa.flows.cisco_asa_disable_snmp_flow.EnableDisableSnmpActions")
     def test_execute_flow_skip_unsupported_version(self, snmp_actions_class):
         """ Disable SNMP Read Community skipped. Unsupported SNMP Version """
 
@@ -43,7 +43,7 @@ class TestCiscoASAEnableSNMPFlow(unittest.TestCase):
         self.tested_instance.execute_flow(snmp_parameters)
         snmp_actions.enable_snmp.assert_not_called()
 
-    @mock.patch("cloudshell.firewall.cisco.asa.flows.cisco_asa_enable_snmp_flow.EnableDisableSnmpActions")
+    @mock.patch("cloudshell.firewall.cisco.asa.flows.cisco_asa_disable_snmp_flow.EnableDisableSnmpActions")
     def test_execute_flow_skip_empty_community(self, snmp_actions_class):
         """ Disable SNMP Read Community skipped. SNMP Read Community is Empty """
 
