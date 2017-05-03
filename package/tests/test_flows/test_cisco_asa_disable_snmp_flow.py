@@ -41,7 +41,7 @@ class TestCiscoASAEnableSNMPFlow(unittest.TestCase):
         snmp_actions_class.return_value = snmp_actions
 
         self.tested_instance.execute_flow(snmp_parameters)
-        snmp_actions.enable_snmp.assert_not_called()
+        snmp_actions.disable_snmp.assert_not_called()
 
     @mock.patch("cloudshell.firewall.cisco.asa.flows.cisco_asa_disable_snmp_flow.EnableDisableSnmpActions")
     def test_execute_flow_skip_empty_community(self, snmp_actions_class):
@@ -52,4 +52,4 @@ class TestCiscoASAEnableSNMPFlow(unittest.TestCase):
         snmp_actions_class.return_value = snmp_actions
 
         self.tested_instance.execute_flow(snmp_parameters)
-        snmp_actions.enable_snmp.assert_not_called()
+        snmp_actions.disable_snmp.assert_not_called()
