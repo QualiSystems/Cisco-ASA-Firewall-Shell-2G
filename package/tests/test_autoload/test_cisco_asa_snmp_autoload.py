@@ -45,24 +45,3 @@ class TestCiscoASASaveFlow(unittest.TestCase):
 
         self.tested_instance._load_snmp_tables()
         self.assertEqual(self.snmp_handler.get_table.call_count, 8)
-
-    # def test__load_snmp_tables_fail_entity_table(self):
-    #     """ Error during load Entity Table information """
-    #
-    #     self.tested_instance._get_entity_table = mock.MagicMock(return_value=None)
-    #
-    #     with self.assertRaisesRegexp(Exception, r"Cannot load entPhysicalTable"):
-    #         self.tested_instance._load_snmp_tables()
-    #
-    #         # self.assertEqual(self.snmp_handler.get_table, 3)
-    #     self.snmp_handler.get_table.assert_called_once_with("IF-MIB", self.tested_instance.IF_ENTITY)
-
-            # 'IF-MIB', self.IF_ENTITY
-
-        # folder_path = mock.MagicMock()
-        # sys_actions = mock.MagicMock()
-        # system_actions_class.return_value = sys_actions
-        # action_map = sys_actions.prepare_action_map()
-        #
-        # self.tested_instance.execute_flow(folder_path, "running")
-        # sys_actions.copy.assert_called_once_with("running-config", folder_path, action_map=action_map)
