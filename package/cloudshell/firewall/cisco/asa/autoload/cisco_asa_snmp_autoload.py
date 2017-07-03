@@ -602,22 +602,25 @@ class CiscoASASNMPAutoload(object):
                 self.exclusion_list.append(element)
 
     def _get_ipv4_interface_address(self, port_index):
-        """Get IP address details for provided port
+        """Get IPv4 address details for provided port
 
         :param port_index: port index in ifTable
-        :return interface_details: detected info for provided interface dict{'IPv4 Address': '', 'IPv6 Address': ''}
+        :return ipv4 address
         """
 
-        if self.ip_v4_table and len(self.ip_v4_table) > 1:
-            for key, value in self.ip_v4_table.iteritems():
-                if 'ipAdEntIfIndex' in value and int(value['ipAdEntIfIndex']) == port_index:
-                    return key
+        for key, value in self.ip_v4_table.iteritems():
+            if 'ipAdEntIfIndex' in value and int(value['ipAdEntIfIndex']) == port_index:
+                return key
 
     def _get_ipv6_interface_address(self, port_index):
-        if self.ip_v6_table and len(self.ip_v6_table) > 1:
-            for key, value in self.ip_v6_table.iteritems():
-                if 'ipAdEntIfIndex' in value and int(value['ipAdEntIfIndex']) == port_index:
-                    return key
+        """Get IPv6 address details for provided port
+
+        :param port_index: port index in ifTable
+        :return ipv6 address
+        """
+        for key, value in self.ip_v6_table.iteritems():
+            if 'ipAdEntIfIndex' in value and int(value['ipAdEntIfIndex']) == port_index:
+                return key
 
     def _get_port_duplex(self, port_index):
         for key, value in self.duplex_table.iteritems():

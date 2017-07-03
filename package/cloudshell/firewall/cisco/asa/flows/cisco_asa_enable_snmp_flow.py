@@ -26,7 +26,7 @@ class CiscoEnableSnmpFlow(EnableSnmpFlow):
             raise Exception(self.__class__.__name__, message)
 
         if not snmp_parameters.snmp_community:
-            message = 'SNMP community cannot be empty'
+            message = "SNMP community cannot be empty"
             self._logger.error(message)
             raise Exception(self.__class__.__name__, message)
 

@@ -58,3 +58,8 @@ class ConsoleTelnetSession(TelnetSession):
             self.disconnect()
             raise
         self._active = True
+
+    def get_local_address(self):
+        """ Determine local device (device that initiate connection) IP address """
+
+        return self._handler.sock.getsockname()[0]
