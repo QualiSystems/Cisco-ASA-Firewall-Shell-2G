@@ -29,9 +29,11 @@ class CiscoASARestoreFlow(RestoreConfigurationFlow):
             restore_action = SystemActions(enable_session, self._logger)
             copy_action_map = restore_action.prepare_action_map(path, configuration_type)
 
-            if configuration_type == "startup-config":
+            if configuration_type == "startup-config" and restore_method == "append":
+                raise Exception(self.__class__.__name__,
+                                "Restore 'startup-config' with method 'append' is not supported")
+            elif configuration_type == "startup-config" and restore_method == "override":
                 restore_action.copy(path, configuration_type, action_map=copy_action_map)
-
             elif configuration_type == "running-config" and restore_method == "override":
                 self._logger.debug("Start backup process for 'startup-config' config")
                 try:
