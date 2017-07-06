@@ -21,12 +21,12 @@ class CiscoEnableSnmpFlow(EnableSnmpFlow):
         """ Configure SNMP Read Community or raise Exception """
 
         if not isinstance(snmp_parameters, SNMPV2Parameters):
-            message = 'Unsupported SNMP version'
+            message = "Unsupported SNMP version"
             self._logger.error(message)
             raise Exception(self.__class__.__name__, message)
 
         if not snmp_parameters.snmp_community:
-            message = 'SNMP community cannot be empty'
+            message = "SNMP community cannot be empty"
             self._logger.error(message)
             raise Exception(self.__class__.__name__, message)
 

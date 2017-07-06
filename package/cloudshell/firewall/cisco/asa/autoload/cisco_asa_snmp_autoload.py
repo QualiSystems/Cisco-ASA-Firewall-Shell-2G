@@ -602,22 +602,25 @@ class CiscoASASNMPAutoload(object):
                 self.exclusion_list.append(element)
 
     def _get_ipv4_interface_address(self, port_index):
-        """Get IP address details for provided port
+        """Get IPv4 address details for provided port
 
         :param port_index: port index in ifTable
-        :return interface_details: detected info for provided interface dict{'IPv4 Address': '', 'IPv6 Address': ''}
+        :return ipv4 address
         """
 
-        if self.ip_v4_table and len(self.ip_v4_table) > 1:
-            for key, value in self.ip_v4_table.iteritems():
-                if 'ipAdEntIfIndex' in value and int(value['ipAdEntIfIndex']) == port_index:
-                    return key
+        for key, value in self.ip_v4_table.iteritems():
+            if 'ipAdEntIfIndex' in value and int(value['ipAdEntIfIndex']) == port_index:
+                return key
 
     def _get_ipv6_interface_address(self, port_index):
-        if self.ip_v6_table and len(self.ip_v6_table) > 1:
-            for key, value in self.ip_v6_table.iteritems():
-                if 'ipAdEntIfIndex' in value and int(value['ipAdEntIfIndex']) == port_index:
-                    return key
+        """Get IPv6 address details for provided port
+
+        :param port_index: port index in ifTable
+        :return ipv6 address
+        """
+        for key, value in self.ip_v6_table.iteritems():
+            if 'ipAdEntIfIndex' in value and int(value['ipAdEntIfIndex']) == port_index:
+                return key
 
     def _get_port_duplex(self, port_index):
         for key, value in self.duplex_table.iteritems():
@@ -641,14 +644,23 @@ class CiscoASASNMPAutoload(object):
         self.logger.info("Building Root")
         vendor = "Cisco"
         model = self._get_device_model()
-        os_version = ''
 
         self.resource.contact_name = self.snmp_handler.get_property('SNMPv2-MIB', 'sysContact', '0')
         self.resource.system_name = self.snmp_handler.get_property('SNMPv2-MIB', 'sysName', '0')
         self.resource.location = self.snmp_handler.get_property('SNMPv2-MIB', 'sysLocation', '0')
-        self.resource.os_version = os_version
+        self.resource.os_version = self._get_device_os_version()
         self.resource.vendor = vendor
         self.resource.model = model
+
+    def _get_device_os_version(self):
+        """ Determine device OS version using SNMP """
+
+        system_description = self.snmp_handler.get_property('SNMPv2-MIB', 'sysDescr', '0')
+        result = re.search(r"[Vv]ersion (?P<version>\S+)", system_description)
+        if result:
+            return result.groupdict()["version"]
+        else:
+            return ""
 
     def _get_adjacent(self, interface_id):
         """Get connected device interface and device name to the specified port id, using cdp or lldp protocols

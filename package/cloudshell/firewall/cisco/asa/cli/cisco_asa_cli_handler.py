@@ -5,11 +5,11 @@ import re
 import time
 
 from cloudshell.cli.command_mode_helper import CommandModeHelper
-from cloudshell.cli.session.ssh_session import SSHSession
-from cloudshell.cli.session.telnet_session import TelnetSession
 from cloudshell.devices.cli_handler_impl import CliHandlerImpl
 from cloudshell.firewall.cisco.asa.cli.cisco_asa_command_modes import EnableCommandMode, DefaultCommandMode,\
     ConfigCommandMode
+from cloudshell.firewall.cisco.asa.sessions.asa_ssh_session import ASASSHSession
+from cloudshell.firewall.cisco.asa.sessions.asa_telnet_session import ASATelnetSession
 from cloudshell.firewall.cisco.asa.sessions.console_ssh_session import ConsoleSSHSession
 from cloudshell.firewall.cisco.asa.sessions.console_telnet_session import ConsoleTelnetSession
 
@@ -55,10 +55,16 @@ class CiscoASACliHandler(CliHandlerImpl):
                                      start_with_new_line=True)
                 ]
 
+    def _ssh_session(self):
+        return ASASSHSession(self.resource_address, self.username, self.password, self.port, self.on_session_start)
+
+    def _telnet_session(self):
+        return ASATelnetSession(self.resource_address, self.username, self.password, self.port, self.on_session_start)
+
     def _new_sessions(self):
-        if self.cli_type.lower() == SSHSession.SESSION_TYPE.lower():
+        if self.cli_type.lower() == ASASSHSession.SESSION_TYPE.lower():
             new_sessions = self._ssh_session()
-        elif self.cli_type.lower() == TelnetSession.SESSION_TYPE.lower():
+        elif self.cli_type.lower() == ASATelnetSession.SESSION_TYPE.lower():
             new_sessions = self._telnet_session()
         elif self.cli_type.lower() == "console":
             new_sessions = list()
@@ -114,7 +120,8 @@ class CiscoASACliHandler(CliHandlerImpl):
 
         if re.search(DefaultCommandMode.PROMPT, result):
             enable_password = self._api.DecryptPassword(self.resource_config.enable_password).Value
-            expect_map = {'[Pp]assword': lambda session, logger: session.send_line(enable_password, logger)}
+            expect_map = {'[Pp]assword': lambda session, logger: session.send_line(enable_password, logger),
+                          '[Uu]ser(name)?|[Ll]ogin': lambda session, logger: session.send_line(self.username, logger)}
             session.hardware_expect('enable', EnableCommandMode.PROMPT, action_map=expect_map, logger=logger)
             result = session.hardware_expect('', '{0}|{1}'.format(DefaultCommandMode.PROMPT, EnableCommandMode.PROMPT),
                                              logger)
