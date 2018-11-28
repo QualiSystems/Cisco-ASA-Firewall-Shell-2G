@@ -44,6 +44,8 @@ Release: **Cisco ASA Firewall 2G** shell
 
 * CloudShell version: 8.0 and above
 
+**Note:** If your CloudShell version does not support this shell, you should consider upgrading to a later version of CloudShell or contact customer support.
+
 ### Data Model
 
 The shell's data model includes all shell metadata, families, and attributes.
